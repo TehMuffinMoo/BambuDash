@@ -9,8 +9,16 @@ let serverUnavailable = false;
 const themeKey = 'bambudash-theme';
 
 const preview = {
-  device: { name: 'Bambu Lab P2S', model: 'P2S SERIES', id: 'PREVIEW', online: true },
-  report: { print: { gcode_state: 'RUNNING', subtask_name: 'desktop-organizer.3mf', mc_percent: 68, mc_remaining_time: 84, layer_num: 136, total_layer_num: 200, nozzle_temper: 220, nozzle_target_temper: 220, bed_temper: 55, bed_target_temper: 55, chamber_temper: 32, device: { aps: { pm: 8, gear: 15 } }, ams: { tray_now: '1', tray_exist_bits: 'f', ams: [{ id: '0', humidity_raw: '38', temp: '24', tray: [{id: '0', tray_type: 'PLA', tray_color: 'E8E7DDFF'}, {id: '1', tray_type: 'PLA', tray_sub_brands: 'PLA Basic', tray_color: '86A69AFF'}, {id: '2', tray_type: 'PETG', tray_color: 'DCA482FF'}, {id: '3', tray_type: 'PLA', tray_color: '515C70FF'}] }] } } }
+  devices: [
+    { name: 'Bambu Lab P2S', model: 'P2S SERIES', id: 'DEMO-P2S', online: true },
+    { name: 'Bambu Lab X1 Carbon', model: 'X1 CARBON', id: 'DEMO-X1', online: true },
+    { name: 'Bambu Lab A1', model: 'A1', id: 'DEMO-A1', online: true }
+  ],
+  reports: {
+    'DEMO-P2S': { print: { gcode_state: 'RUNNING', subtask_name: 'desktop-organizer.3mf', mc_percent: 68, mc_remaining_time: 84, layer_num: 136, total_layer_num: 200, nozzle_temper: 220, nozzle_target_temper: 220, bed_temper: 55, bed_target_temper: 55, chamber_temper: 32, device: { aps: { pm: 8, gear: 15 } }, ams: { tray_now: '1', tray_exist_bits: 'f', ams: [{ id: '0', humidity_raw: '38', temp: '24', tray: [{id: '0', tray_type: 'PLA', tray_color: 'E8E7DDFF'}, {id: '1', tray_type: 'PLA', tray_sub_brands: 'PLA Basic', tray_color: '86A69AFF'}, {id: '2', tray_type: 'PETG', tray_color: 'DCA482FF'}, {id: '3', tray_type: 'PLA', tray_color: '515C70FF'}] }] } } },
+    'DEMO-X1': { print: { gcode_state: 'PAUSE', subtask_name: 'planter.3mf', mc_percent: 42, mc_remaining_time: 55, layer_num: 84, total_layer_num: 200, nozzle_temper: 240, nozzle_target_temper: 240, bed_temper: 70, bed_target_temper: 70, chamber_temper: 38, ams: { tray_now: '0', tray_exist_bits: '1', ams: [{ id: '0', humidity_raw: '32', temp: '26', tray: [{id: '0', tray_type: 'PETG', tray_color: '76A9B6FF'}] }] } } },
+    'DEMO-A1': { _updated_at: 1, print: { gcode_state: 'IDLE', nozzle_temper: 25, nozzle_target_temper: 0, bed_temper: 24, bed_target_temper: 0 } }
+  }
 };
 
 function setText(id, value) { byId(id).textContent = value; }
@@ -216,8 +224,9 @@ async function request(path, data) {
 function showSnapshot() {
   const connection = lastSnapshot?.connection || 'disconnected';
   const hasSession = connection !== 'disconnected';
-  const printers = hasSession ? lastSnapshot.devices : [];
   if (hasSession) demoMode = false;
+  const snapshot = demoMode ? preview : lastSnapshot;
+  const printers = demoMode || hasSession ? snapshot.devices : [];
   const demoButton = byId('demo-button');
   demoButton.disabled = hasSession || (!demoMode && (serverUnavailable || !lastSnapshot));
   demoButton.textContent = demoMode ? 'Exit demo' : 'Show demo';
@@ -235,10 +244,8 @@ function showSnapshot() {
   const showData = demoMode || Boolean(device);
   byId('printer-data').hidden = !showData;
   byId('connect-prompt').hidden = showData;
-  if (demoMode) {
-    render(preview.device, preview.report, true, connection);
-  } else if (device) {
-    render(device, lastSnapshot.reports[device.id] || {}, false, connection);
+  if (device) {
+    render(device, snapshot.reports[device.id] || {}, demoMode, connection);
   } else {
     const cloudLabel = connection === 'connected' ? 'Cloud connected' : connection === 'connecting' ? 'Cloud reconnecting' : connection === 'error' ? 'Cloud connection failed' : 'Not connected';
     if (byId('top-connection')) setText('top-connection', cloudLabel);
@@ -258,7 +265,7 @@ function showSnapshot() {
     setText('side-connection', demoMode ? 'Demo mode · server unavailable' : 'Server unavailable');
     setText('updated', 'LOCAL SERVER UNAVAILABLE');
     if (demoMode) setText('refresh-detail', 'Demo data · local server unavailable');
-    if (device) {
+    if (device && !demoMode) {
       setText('mode-label', 'SERVER UNAVAILABLE · LAST REPORTED DATA');
       setText('refresh-detail', 'Local server unavailable · last reported data');
       if (byId('preview-badge')) {

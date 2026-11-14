@@ -8,7 +8,7 @@ BambuDash is a local, read-only dashboard for Bambu Lab printers. It uses Bambu 
 - Current print, progress, estimated completion time, layer, and print thumbnail.
 - Nozzle, bed, and chamber temperatures, plus E1 air quality and purifier fan mode.
 - AMS units, filament slots, and active filament.
-- Light and dark themes, and an optional demo mode.
+- Light and dark themes, and an optional demo mode with three selectable printers.
 
 Available readings depend on the printer and its firmware. The dashboard checks for updates every five seconds. Local P2S print thumbnails require network access to the printer and its media; cloud print thumbnails come from Bambu Cloud.
 
