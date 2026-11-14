@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f7f5">
+  <title>BambuDash | Printer dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css?v=2">
+  <link rel="stylesheet" href="/theme.css?v=3">
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+  <script src="/app.js?v=8" defer></script>
+</head>
+<body class="desktop">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="BambuDash home"><span class="brand-mark"><i data-lucide="layers-2"></i></span><span>BambuDash<span class="brand-period">.</span></span></a>
+      <div class="side-label">WORKSPACE</div>
+      <nav class="side-nav" aria-label="Main navigation">
+        <a class="nav-item active" href="#dashboard"><i data-lucide="layout-dashboard"></i><span>Overview</span><span class="nav-dot"></span></a>
+      </nav>
+      <div class="side-bottom">
+        <div class="side-indicator"><span class="status-dot"></span><span id="side-connection">Not connected</span></div>
+        <p>Your print space,<br>at a glance.</p>
+      </div>
+    </aside>
+
+    <main id="dashboard" class="main">
+      <header class="topbar">
+        <div class="breadcrumbs"><span>Workspace</span><i data-lucide="chevron-right"></i><strong>Overview</strong></div>
+        <div class="top-actions"><span class="cloud-label"><i data-lucide="cloud"></i><span id="top-connection">Not connected</span></span><button class="icon-button" id="settings-button" type="button" aria-label="Settings" title="Settings"><i data-lucide="settings-2"></i></button><button class="button button-dark" id="connect-button"><i data-lucide="plus"></i><span>Connect printer</span></button></div>
+      </header>
+
+      <div class="content">
+        <p id="connection-message" class="settings-message" role="alert"></p>
+        <div class="heading-row">
+          <div><div class="eyebrow"><span class="eyebrow-line"></span> YOUR PRINT SPACE</div><h1>Overview<span class="heading-dot">.</span></h1><p class="subtitle">A little more clarity for everything you make.</p></div>
+          <div class="heading-date"><span id="today-day"></span><strong id="today-date"></strong></div>
+        </div>
+
+        <div id="connect-prompt" class="connect-prompt" role="status"><i data-lucide="printer"></i><h2 id="connect-prompt-title">Checking connection</h2><p id="connect-prompt-message">Connecting to the local dashboard.</p><button id="connect-prompt-button" class="button button-dark" type="button" hidden>Connect printer</button></div>
+        <div id="printer-data" hidden>
+        <div class="section-heading"><div><span class="section-index">01 /</span><h2>Printer overview</h2></div><div class="section-right"><select id="printer-select" aria-label="Select printer" hidden></select><span class="live-indicator"><span></span><span id="mode-label">NOT CONNECTED</span></span><button class="icon-button" id="refresh-button" title="Refresh status" aria-label="Refresh status"><i data-lucide="refresh-cw"></i></button></div></div>
+        <p class="refresh-detail" id="refresh-detail">Preview data · checked every 5 sec</p>
+
+        <div class="dashboard-grid">
+          <section class="printer-panel" aria-labelledby="printer-name">
+            <div class="panel-top"><div><div class="micro-label">YOUR PRINTER</div><h3 id="printer-name">Bambu Lab P2S</h3><div class="model-line"><span id="printer-model">P2S SERIES</span><span class="model-divider"></span><span id="printer-serial">PREVIEW</span></div></div><span class="status-pill" id="printer-status"><span></span>Printing</span></div>
+            <div class="printer-image-wrap"><div id="preview-empty" class="preview-empty"><i data-lucide="box"></i><span id="preview-message">No print preview available</span></div><img id="job-preview" class="printer-image print-preview" alt="Current print preview" referrerpolicy="no-referrer" hidden><div class="image-caption"><span>CURRENT PRINT</span><span>PREVIEW</span></div></div>
+            <div class="printer-footer"><div><span class="footer-icon"><i data-lucide="wifi"></i></span><div><span class="footer-label">CONNECTION</span><strong id="connection-detail">Cloud preview</strong></div></div><div class="footer-separator"></div><div><span class="footer-icon"><i data-lucide="box"></i></span><div><span class="footer-label">PRINTER</span><strong id="availability">Ready to connect</strong></div></div></div>
+          </section>
+
+          <div class="right-column">
+            <section class="job-panel" aria-labelledby="job-title">
+              <div class="job-heading"><div><div class="micro-label light">CURRENT JOB</div><h3 id="job-title">A good idea,<br>in progress<span>.</span></h3></div><span class="job-icon"><i data-lucide="move-up-right"></i></span></div>
+              <div class="job-info"><div class="job-file-icon"><i data-lucide="box"></i></div><div class="job-file"><span>PRINT FILE</span><strong id="job-name">desktop-organizer.3mf</strong></div><span class="job-file-status" id="job-state">PRINTING</span></div>
+              <div class="progress-heading"><span>Print progress</span><strong><span id="progress">68</span><small>%</small></strong></div>
+              <div class="progress-track"><div id="progress-bar" class="progress-fill"></div></div>
+              <div class="job-stats"><div><span>TIME REMAINING</span><strong id="remaining">1h 24m</strong></div><div><span>EST. COMPLETION</span><strong id="completion">—</strong></div><div><span>LAYER</span><strong id="layer">136 <small>/ 200</small></strong></div></div>
+            </section>
+
+            <section class="metrics-section" aria-labelledby="conditions-heading"><div class="metrics-heading"><div><span class="section-index">02 /</span><h2 id="conditions-heading">Printer conditions</h2></div><span class="metrics-note" id="metrics-note">EXAMPLE READINGS</span></div>
+              <div class="metrics-grid"><div class="metric"><div class="metric-top"><span class="metric-icon coral"><i data-lucide="thermometer"></i></span><i data-lucide="arrow-up-right" class="metric-arrow"></i></div><div class="metric-name">Nozzle</div><div class="metric-value"><span id="nozzle">220</span><span class="unit">°C</span></div><div class="metric-target">Target <span id="nozzle-target">220°C</span></div></div>
+              <div class="metric"><div class="metric-top"><span class="metric-icon mint"><i data-lucide="square-stack"></i></span><i data-lucide="arrow-up-right" class="metric-arrow"></i></div><div class="metric-name">Build plate</div><div class="metric-value"><span id="bed">55</span><span class="unit">°C</span></div><div class="metric-target">Target <span id="bed-target">55°C</span></div></div>
+              <div class="metric"><div class="metric-top"><span class="metric-icon lilac"><i data-lucide="wind"></i></span><i data-lucide="arrow-up-right" class="metric-arrow"></i></div><div class="metric-name">Chamber</div><div class="metric-value"><span id="chamber">32</span><span class="unit">°C</span></div><div class="metric-target">Ambient temperature</div></div>
+              <div class="metric air-metric"><div class="metric-top"><span class="metric-icon aqua"><i data-lucide="air-vent"></i></span><i data-lucide="arrow-up-right" class="metric-arrow"></i></div><div class="metric-name">Air quality</div><div class="metric-value"><span id="air-quality">—</span><span class="unit">µg/m³</span></div><div class="metric-target">Fan: <span id="purifier-fan">—</span></div></div></div>
+            </section>
+          </div>
+        </div>
+        <section class="ams-section" aria-labelledby="ams-heading">
+          <div class="section-heading ams-heading"><div><span class="section-index">03 /</span><h2 id="ams-heading">Filament system</h2></div><span class="ams-summary" id="ams-summary">PREVIEW DATA</span></div>
+          <div id="ams-units" class="ams-units"></div>
+        </section>
+        <footer class="page-footer"><span>MADE FOR THE MAKING.</span><span id="updated">EXAMPLE DATA · NOT CONNECTED</span><span>YOUR SPACE, YOUR PACE <span class="footer-star">✳</span></span></footer>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <dialog id="settings-dialog"><div class="settings-dialog-content"><div class="dialog-header"><h2>Settings</h2><button type="button" class="icon-button" id="close-settings" aria-label="Close settings"><i data-lucide="x"></i></button></div><div class="settings-option"><label for="theme-select">Theme</label><select id="theme-select"><option value="light">Light</option><option value="dark">Dark</option></select></div><div class="settings-option"><span>Demo mode <small>Example data only</small></span><button id="demo-button" class="button button-outline" type="button">Show demo</button></div><p id="settings-message" class="settings-message" role="status"></p></div></dialog>
+  <dialog id="connect-dialog"><form id="connect-form" method="dialog"><div class="dialog-header"><div><div class="micro-label">BAMBU CLOUD</div><h2>Connect your printer<span class="heading-dot">.</span></h2></div><button type="button" class="icon-button" id="close-dialog" aria-label="Close" title="Close"><i data-lucide="x"></i></button></div><p class="dialog-copy">Sign in to see your printers and live status. LAN-only mode is not required.</p><div class="form-field"><label for="region">Account region</label><select id="region"><option value="global">Global</option><option value="china">China</option></select></div><div id="email-fields"><div class="form-field"><label for="email">Bambu account email</label><div class="code-row"><input id="email" type="email" placeholder="you@example.com" autocomplete="email"><button type="button" id="send-code" class="button button-outline">Send code</button></div></div><div class="form-field"><label for="code">Verification code</label><input id="code" inputmode="numeric" placeholder="Enter code" autocomplete="one-time-code"></div></div><div id="token-fields" hidden><div class="form-field"><label for="token">Bambu Cloud access token</label><input id="token" type="password" placeholder="Paste your access token" autocomplete="off"></div></div><button type="button" class="text-button" id="toggle-auth">Use an access token instead</button><p class="form-message" id="form-message" role="status"></p><button class="button button-dark form-submit" type="submit" id="submit-connect">Connect to Bambu Cloud <i data-lucide="arrow-right"></i></button><label class="remember-option"><input id="remember-session" type="checkbox"><span>Remember this session on this device<br><small>Stores your cloud token unencrypted, accessible to this OS user.</small></span></label></form></dialog>
+</body>
+</html>
