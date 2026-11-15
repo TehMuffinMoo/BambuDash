@@ -51,3 +51,28 @@ dialog{border:0;border-radius:8px;padding:0;width:min(480px,calc(100% - 24px));m
   #page-overview .overview-grid{flex:0 0 230px}
   #page-overview .temperature-strip{flex:0 0 96px}
 }
+#page-filament:not([hidden]){display:flex;flex-direction:column}
+#page-filament .page-heading{gap:10px;flex-shrink:0}
+#page-filament .page-heading h1{margin:0}
+.filament-controls{display:flex;align-items:center;justify-content:flex-end;gap:12px;min-width:0}
+#page-filament .page-subtitle{font-size:11px;text-align:right}
+#page-filament .ams-navigation{height:auto;gap:8px;flex-shrink:0}
+#page-filament .ams-units{height:auto;flex:1;min-height:0}
+#page-filament .ams-unit{padding:10px 12px}
+#page-filament .ams-unit-header{gap:10px}
+#page-filament .ams-unit-header h3{margin:0;font-size:18px}
+#page-filament .ams-unit-meta{font-size:14px;text-align:right}
+#page-filament .ams-unit-label,#page-filament .ams-housing-top,#page-filament .ams-housing-base{display:none}
+#page-filament .ams-housing{padding:8px}
+#page-filament .ams-slots{grid-auto-rows:minmax(210px,auto);overflow-y:auto}
+#page-filament .ams-slot{padding:9px}
+#page-filament .ams-slot:only-child{grid-column:1 / -1}
+#page-filament .slot-top{font-size:12px}
+#page-filament .spool{height:min(110px,45%)}
+#page-filament .slot-name{font-size:15px;white-space:normal;overflow:visible;overflow-wrap:anywhere}
+#page-filament .slot-detail{font-size:13px;white-space:normal;overflow:visible;overflow-wrap:anywhere}
+@media(max-width:600px){
+  #page-filament .page-heading{flex-wrap:wrap}
+  .filament-controls{gap:6px}
+  #page-filament .ams-slots{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

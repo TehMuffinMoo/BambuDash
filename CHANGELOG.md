@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- Improved the touchscreen filament layout and readability.
+- Added example remaining filament percentages to demo mode.
+
 ## 0.1.0
 
 - Added desktop and touchscreen dashboards for Bambu Cloud printer status.
