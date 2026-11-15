@@ -12,6 +12,10 @@
 .settings-option select{min-width:120px;height:42px;padding:0 10px;border:1px solid #c9d6cb;border-radius:6px;background:#fff;color:#25342a}
 .settings-message{margin:0;padding:0;color:#a13725;font-size:12px;line-height:1.4}
 .settings-message:not(:empty){padding:12px 0}
+.update-option{flex-wrap:wrap}
+.update-option>span,.update-option>div:first-child{min-width:0;flex:1 1 150px}
+.update-actions{display:flex;gap:8px;align-items:center;padding:8px 0}
+.update-actions button{white-space:nowrap}
 .desktop .remember-option{display:flex;align-items:flex-start;gap:8px;margin:15px 0 0;color:#43594a;font-size:11px;font-weight:700;line-height:1.4}
 .desktop .remember-option input{width:19px;height:19px;margin:0;flex-shrink:0;accent-color:#51805a}
 .desktop .remember-option small{font-size:10px;color:#52665a;font-weight:400}

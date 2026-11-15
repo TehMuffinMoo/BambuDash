@@ -343,6 +343,113 @@ byId('theme-select').addEventListener('change', event => {
 window.addEventListener('storage', event => {
   if (event.key === themeKey) applyTheme(event.newValue);
 });
+let updateVersion = null;
+let updateInProgress = false;
+let installedVersion = null;
+function showUpdateStatus(status) {
+  installedVersion = status.current;
+  updateVersion = status.available ? status.latest : null;
+  byId('install-update').hidden = !updateVersion;
+  const detail = status.state === 'error' ? status.message : status.available ? `Update v${status.latest} available` : status.latest ? 'Up to date' : 'No published releases';
+  setText('update-status', `v${status.current} · ${detail}`);
+}
+async function readUpdateStatus() {
+  const response = await fetch('/api/update/status', { cache: 'no-store' });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || 'Update status unavailable.');
+  return result;
+}
+async function checkUpdates() {
+  if (updateInProgress) return;
+  byId('check-updates').disabled = true;
+  setText('update-status', `${installedVersion ? `v${installedVersion} · ` : ''}Checking for updates...`);
+  try {
+    const status = await request('/api/update/check', {});
+    if (status.state === 'installing' || status.state === 'restarting') {
+      watchUpdate(status.target);
+    } else {
+      showUpdateStatus(status);
+    }
+  } catch (error) {
+    byId('install-update').hidden = true;
+    setText('update-status', `${installedVersion ? `v${installedVersion} · ` : ''}Update check failed: ${error.message}`);
+  } finally {
+    if (!updateInProgress) byId('check-updates').disabled = false;
+  }
+}
+byId('check-updates').addEventListener('click', checkUpdates);
+function watchUpdate(target) {
+  updateInProgress = true;
+  byId('check-updates').disabled = true;
+  byId('install-update').disabled = true;
+  const started = Date.now();
+  async function waitForUpdate() {
+    if (Date.now() - started > 15 * 60 * 1000) {
+      updateInProgress = false;
+      byId('check-updates').disabled = false;
+      byId('install-update').disabled = false;
+      setText('update-status', 'Update status unavailable. Check the server logs before retrying.');
+      return;
+    }
+    try {
+      const status = await readUpdateStatus();
+      if (status.state === 'error') {
+        updateInProgress = false;
+        byId('check-updates').disabled = false;
+        byId('install-update').disabled = false;
+        showUpdateStatus(status);
+        return;
+      }
+      if (status.state === 'idle' && status.current === target) {
+        updateInProgress = false;
+        byId('check-updates').disabled = false;
+        byId('install-update').disabled = false;
+        showUpdateStatus(status);
+        setText('update-status', `Updated to v${target}.`);
+        return;
+      }
+      setText('update-status', status.message || `Installing v${target}...`);
+    } catch (error) {
+      setText('update-status', 'Waiting for BambuDash...');
+    }
+    window.setTimeout(waitForUpdate, 2000);
+  }
+  window.setTimeout(waitForUpdate, 2000);
+}
+byId('install-update').addEventListener('click', async () => {
+  if (!updateVersion || updateInProgress) return;
+  const target = updateVersion;
+  if (!window.confirm(`Install BambuDash v${target} and restart? You may need to reconnect to Bambu Cloud if your session is not remembered.`)) return;
+  updateInProgress = true;
+  byId('check-updates').disabled = true;
+  byId('install-update').disabled = true;
+  setText('update-status', `Installing v${target}...`);
+  try {
+    await request('/api/update/install', { version: target });
+  } catch (error) {
+    updateInProgress = false;
+    byId('check-updates').disabled = false;
+    byId('install-update').disabled = false;
+    setText('update-status', `Update failed: ${error.message}`);
+    return;
+  }
+  watchUpdate(target);
+});
+async function initializeUpdates() {
+  try {
+    const status = await readUpdateStatus();
+    if (status.state === 'installing' || status.state === 'restarting') {
+      watchUpdate(status.target);
+      return;
+    }
+    showUpdateStatus(status);
+  } catch (error) {
+    setText('update-status', `Version unavailable: ${error.message}`);
+  }
+  await checkUpdates();
+}
+initializeUpdates();
+window.setInterval(checkUpdates, 6 * 60 * 60 * 1000);
 byId('close-dialog').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
 byId('toggle-auth').addEventListener('click', () => {

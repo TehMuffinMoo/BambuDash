@@ -9,6 +9,7 @@ BambuDash is a local, read-only dashboard for Bambu Lab printers. It uses Bambu 
 - Nozzle, bed, and chamber temperatures, plus E1 air quality and purifier fan mode.
 - AMS units, filament slots, and active filament.
 - Light and dark themes, and an optional demo mode with three selectable printers.
+- Version information and in-app updates from stable GitHub releases.
 
 Available readings depend on the printer and its firmware. The dashboard checks for updates every five seconds. Local P2S print thumbnails require network access to the printer and its media; cloud print thumbnails come from Bambu Cloud.
 
@@ -33,6 +34,16 @@ python -m venv .venv
 ```
 
 Open http://127.0.0.1:8000 for the desktop dashboard or http://127.0.0.1:8000/touch.html for the touchscreen view. Select **Connect printer**, choose your region, and sign in with an email verification code or an existing Bambu Cloud access token.
+
+### Updates
+
+Open **Settings** to see the installed version, check for a stable GitHub release, and install an available update. BambuDash also checks automatically while a dashboard is open. Installing an update restarts the server; a cloud session must be reconnected unless it was remembered.
+
+Git checkouts must have a clean working tree and the release must be a fast-forward of the current branch. Copied installations are compared against their installed release before updating; modified files and conflicting local files are not overwritten. Installations from before versioned releases need to be updated manually once before they can use in-app updates.
+
+If an update changes dependencies, they are installed before the application files are updated. A failed update may therefore leave the Python environment changed; check the error and repair the environment if needed.
+
+For each release, update `VERSION` and [CHANGELOG.md](CHANGELOG.md), commit the changes, and publish a GitHub release with a matching tag such as `v0.1.0`. In-app updates use published stable releases, not drafts, prereleases, or unreleased commits.
 
 ### Raspberry Pi touchscreen
 

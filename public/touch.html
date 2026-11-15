@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#18271f">
   <title>BambuDash</title>
   <link rel="stylesheet" href="/touch.css?v=6">
-  <link rel="stylesheet" href="/theme.css?v=3">
+  <link rel="stylesheet" href="/theme.css?v=4">
   <script src="/vendor/lucide.min.js" defer></script>
-  <script src="/app.js?v=9" defer></script>
+  <script src="/app.js?v=10" defer></script>
   <script src="/touch.js?v=4" defer></script>
 </head>
 <body class="touch">
@@ -30,7 +30,7 @@
     </section>
     <section class="page" id="page-settings" aria-labelledby="settings-heading" hidden>
       <div class="page-heading"><div><span class="eyebrow">DEVICE SETTINGS</span><h1 id="settings-heading">Settings<span>.</span></h1></div></div>
-      <div class="settings-list"><div class="settings-row"><div><strong>Bambu Cloud</strong><span id="side-connection">Not connected</span></div><button id="connect-button" class="action-button"><i data-lucide="plus"></i><span>Connect printer</span></button></div><div class="settings-row"><div><strong>Printer</strong><span id="printer-serial">—</span></div><select id="printer-select" aria-label="Select printer" hidden></select></div><div class="settings-row"><div><strong>Last printer report</strong><span id="updated">NOT CONNECTED</span></div><button id="refresh-button" class="round-button" type="button" aria-label="Refresh status" title="Refresh status"><i data-lucide="refresh-cw"></i></button></div><div class="settings-row"><label for="theme-select"><strong>Theme</strong></label><select id="theme-select"><option value="light">Light</option><option value="dark">Dark</option></select></div><div class="settings-row"><div><strong>Demo mode</strong><span>Example data only</span></div><button id="demo-button" class="secondary-button" type="button">Show demo</button></div><p id="settings-message" class="settings-message" role="status"></p></div>
+      <div class="settings-list"><div class="settings-row"><div><strong>Bambu Cloud</strong><span id="side-connection">Not connected</span></div><button id="connect-button" class="action-button"><i data-lucide="plus"></i><span>Connect printer</span></button></div><div class="settings-row"><div><strong>Printer</strong><span id="printer-serial">—</span></div><select id="printer-select" aria-label="Select printer" hidden></select></div><div class="settings-row"><div><strong>Last printer report</strong><span id="updated">NOT CONNECTED</span></div><button id="refresh-button" class="round-button" type="button" aria-label="Refresh status" title="Refresh status"><i data-lucide="refresh-cw"></i></button></div><div class="settings-row"><label for="theme-select"><strong>Theme</strong></label><select id="theme-select"><option value="light">Light</option><option value="dark">Dark</option></select></div><div class="settings-row"><div><strong>Demo mode</strong><span>Example data only</span></div><button id="demo-button" class="secondary-button" type="button">Show demo</button></div><div class="settings-row update-option"><div><strong>BambuDash</strong><span id="update-status" role="status">Checking version...</span></div><div class="update-actions"><button id="check-updates" class="secondary-button" type="button">Check</button><button id="install-update" class="action-button" type="button" hidden>Install update</button></div></div><p id="settings-message" class="settings-message" role="status"></p></div>
     </section>
   </main>
   <nav class="bottom-nav" aria-label="Touchscreen pages"><button class="nav-button active" data-page="overview" aria-current="page"><i data-lucide="layout-dashboard"></i><span>Overview</span></button><button class="nav-button" data-page="filament"><i data-lucide="layers-2"></i><span>Filament</span></button><button class="nav-button" data-page="settings"><i data-lucide="settings-2"></i><span>Settings</span></button></nav>

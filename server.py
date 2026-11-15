@@ -2,6 +2,7 @@ import base64
 import hashlib
 import json
 import os
+import sys
 import threading
 import time
 import urllib.error
@@ -13,6 +14,7 @@ from pathlib import Path
 
 import paho.mqtt.client as mqtt
 import printer_media
+import updater
 
 
 ROOT = Path(__file__).parent
@@ -332,6 +334,7 @@ class CloudSession:
 
 
 session = CloudSession()
+updates = updater.UpdateManager(ROOT)
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -363,12 +366,24 @@ class Handler(SimpleHTTPRequestHandler):
             self.wfile.write(image)
         elif path == "/api/status":
             self.json_response(session.snapshot())
+        elif path == "/api/update/status":
+            try:
+                self.json_response(updates.status())
+            except updater.UpdateError as error:
+                self.json_response({"error": str(error)}, 500)
         elif path.startswith("/api/"):
             self.json_response({"error": "Not found"}, 404)
         else:
             super().do_GET()
 
     def do_POST(self):
+        if self.path.startswith("/api/update/"):
+            try:
+                hostname = urllib.parse.urlsplit("http://" + self.headers.get("Host", "")).hostname
+            except ValueError:
+                hostname = None
+            if hostname not in ("127.0.0.1", "localhost"):
+                return self.json_response({"error": "Updates require a localhost address."}, 403)
         origin = self.headers.get("Origin")
         if origin and origin not in (f"http://{self.headers.get('Host')}",):
             return self.json_response({"error": "Invalid request origin."}, 403)
@@ -407,8 +422,22 @@ class Handler(SimpleHTTPRequestHandler):
                 session.disconnect()
                 forget_session()
                 self.json_response({"ok": True})
+            elif self.path == "/api/update/check":
+                self.json_response(updates.check())
+            elif self.path == "/api/update/install":
+                def restart():
+                    self.server.restart_requested = True
+                    try:
+                        self.server.shutdown()
+                    except (OSError, RuntimeError):
+                        self.server.restart_requested = False
+                        raise
+                updates.start(data.get("version"), restart)
+                self.json_response({"ok": True}, 202)
             else:
                 self.json_response({"error": "Not found"}, 404)
+        except updater.UpdateError as error:
+            self.json_response({"error": str(error)}, 400)
         except OSError:
             self.json_response({"error": "Could not update the saved cloud session."}, 500)
         except (ValueError, TypeError, json.JSONDecodeError) as error:
@@ -418,6 +447,7 @@ class Handler(SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8000"))
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server.restart_requested = False
     threading.Thread(target=session.restore, daemon=True).start()
     print(f"BambuDash running at http://127.0.0.1:{port}", flush=True)
     try:
@@ -427,3 +457,6 @@ if __name__ == "__main__":
     finally:
         session.disconnect()
         server.server_close()
+    if server.restart_requested:
+        print("Restarting BambuDash after update...", flush=True)
+        os.execv(sys.executable, [sys.executable, str(ROOT / "server.py")])
