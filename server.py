@@ -63,14 +63,18 @@ def merge_dict(target, update, path=()):
         if isinstance(value, dict) and isinstance(target.get(key), dict):
             merge_dict(target[key], value, current_path)
         elif current_path in (("print", "ams", "ams"), ("print", "ams", "ams", "tray"),
-                              ("print", "device", "extruder", "info")) and isinstance(value, list):
+                              ("print", "device", "extruder", "info"),
+                              ("print", "device", "nozzle", "info"),
+                              ("print", "device", "airduct", "parts"),
+                              ("print", "lights_report")) and isinstance(value, list):
+            identity = "node" if current_path == ("print", "lights_report") else "id"
             items = target.setdefault(key, [])
             if not isinstance(items, list):
                 items = target[key] = []
             for entry in value:
-                if not isinstance(entry, dict) or "id" not in entry:
+                if not isinstance(entry, dict) or identity not in entry:
                     continue
-                existing = next((item for item in items if isinstance(item, dict) and str(item.get("id")) == str(entry["id"])), None)
+                existing = next((item for item in items if isinstance(item, dict) and str(item.get(identity)) == str(entry[identity])), None)
                 if existing is None:
                     existing = {}
                     items.append(existing)

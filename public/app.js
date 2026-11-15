@@ -20,6 +20,15 @@ const preview = {
     'DEMO-A1': { _updated_at: 1, print: { gcode_state: 'IDLE', nozzle_temper: 25, nozzle_target_temper: 0, bed_temper: 24, bed_target_temper: 0 } }
   }
 };
+Object.assign(preview.reports['DEMO-P2S'].print, {
+  stg_cur: 0, spd_lvl: 2, spd_mag: 100, cooling_fan_speed: '12',
+  big_fan1_speed: '6', big_fan2_speed: '4', wifi_signal: '-52dBm',
+  nozzle_diameter: '0.4', lights_report: [{ node: 'chamber_light', mode: 'on' }],
+  ipcam: { ipcam_record: 'enable', timelapse: 'enable' }, print_error: 0, hms: []
+});
+Object.assign(preview.reports['DEMO-P2S'].print.device, {
+  storage: [{ name: 'usb' }], cam: { tl_external_total_kb: 268435456, tl_external_free_kb: 201326592 }
+});
 
 function setText(id, value) { byId(id).textContent = value; }
 function valueOrDash(value) { return value === undefined || value === null || value === '' ? '—' : value; }
@@ -32,6 +41,132 @@ function duration(minutes) {
 function stateLabel(state) {
   const states = { RUNNING: 'Printing', PREPARE: 'Preparing', PAUSE: 'Paused', FINISH: 'Completed', SUCCESS: 'Completed', FAILED: 'Failed', IDLE: 'Idle', SLICING: 'Preparing' };
   return states[state] || (state ? String(state).toLowerCase().replace(/^./, c => c.toUpperCase()) : 'Waiting');
+}
+const printStages = {
+  '-1': 'Idle', 0: 'Printing', 1: 'Bed levelling', 2: 'Preheating bed',
+  3: 'Calibrating vibration', 4: 'Changing filament', 5: 'Paused',
+  6: 'Paused: filament runout', 7: 'Heating nozzle', 8: 'Calibrating extrusion',
+  9: 'Scanning bed', 10: 'Inspecting first layer', 11: 'Identifying build plate',
+  12: 'Calibrating lidar', 13: 'Homing toolhead', 14: 'Cleaning nozzle',
+  15: 'Checking nozzle temperature', 16: 'Paused by user', 17: 'Paused: front cover',
+  18: 'Calibrating lidar', 19: 'Calibrating flow', 20: 'Paused: nozzle temperature',
+  21: 'Paused: bed temperature', 22: 'Unloading filament', 23: 'Paused: skipped step',
+  24: 'Loading filament', 25: 'Calibrating motor noise', 26: 'Paused: AMS disconnected',
+  27: 'Paused: heatbreak fan', 28: 'Paused: chamber temperature', 29: 'Cooling chamber',
+  30: 'Paused by G-code', 31: 'Motor noise demonstration', 32: 'Paused: nozzle covered',
+  33: 'Paused: cutter error', 34: 'Paused: first layer error', 35: 'Paused: nozzle clog',
+  36: 'Checking accuracy before calibration', 37: 'Calibrating accuracy',
+  38: 'Checking accuracy after calibration', 39: 'Calibrating nozzle offset',
+  40: 'Levelling heated bed', 41: 'Checking quick release', 42: 'Checking door and cover',
+  43: 'Calibrating laser', 44: 'Checking platform', 45: 'Checking camera position',
+  46: 'Calibrating camera', 47: 'Bed levelling: phase 1', 48: 'Bed levelling: phase 2',
+  49: 'Heating chamber', 50: 'Cooling bed', 51: 'Printing calibration lines',
+  52: 'Checking material', 53: 'Calibrating live camera', 54: 'Waiting for bed temperature',
+  55: 'Checking material position', 56: 'Calibrating cutter offset', 57: 'Measuring surface',
+  58: 'Thermal preconditioning', 59: 'Homing blade holder', 60: 'Calibrating camera offset',
+  61: 'Calibrating blade holder', 62: 'Testing hotend exchange', 63: 'Equalizing chamber temperature',
+  64: 'Preparing hotend', 65: 'Calibrating nozzle clumping detection', 66: 'Purifying chamber air',
+  67: 'Measuring rotary attachment', 68: 'Moving to purge chute', 69: 'Cooling nozzle',
+  70: 'Moving to bed centre', 71: 'Arc fitting', 72: 'Detecting hotend type',
+  73: 'Checking build plate alignment', 74: 'Checking bed surface',
+  75: 'Checking beneath bed', 76: 'Pre-extruding', 77: 'Preparing AMS',
+  82: 'Stabilizing bed temperature', 255: 'Idle'
+};
+function reportedNumber(value) {
+  if ((typeof value !== 'number' && typeof value !== 'string') || String(value).trim() === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+function fanSpeed(value) {
+  const speed = reportedNumber(value);
+  return speed !== null && speed >= 0 && speed <= 15 ? `${Math.ceil(speed / 15 * 10) * 10}%` : 'Not reported';
+}
+function errorHex(value) {
+  const number = reportedNumber(value);
+  return number !== null && Number.isInteger(number) && number >= 0 && number <= 0xffffffff
+    ? number.toString(16).toUpperCase().padStart(8, '0') : null;
+}
+function printerAlerts(print) {
+  const alerts = [];
+  const code = errorHex(print.print_error);
+  if (code && code !== '00000000') alerts.push(`Print error ${code.slice(0, 4)}_${code.slice(4)}`);
+  if (Array.isArray(print.hms)) {
+    for (const entry of print.hms) {
+      const attr = errorHex(entry?.attr);
+      const detail = errorHex(entry?.code);
+      const description = typeof entry?.message === 'string' ? entry.message.trim() : '';
+      const name = attr && detail ? `HMS_${attr.slice(0, 4)}_${attr.slice(4)}_${detail.slice(0, 4)}_${detail.slice(4)}` : 'Unrecognized printer alert';
+      alerts.push(description ? `${name}: ${description}` : name);
+    }
+  }
+  return alerts;
+}
+function renderTelemetry(report, connection, isPreview, offline) {
+  const print = report.print || {};
+  const stage = reportedNumber(print.stage?._id ?? print.stg_cur);
+  const speed = reportedNumber(print.spd_lvl);
+  const modifier = reportedNumber(print.spd_mag);
+  const profiles = { 1: 'Silent', 2: 'Standard', 3: 'Sport', 4: 'Ludicrous' };
+  const wifi = typeof print.wifi_signal === 'string' && /^-?\d+(?:\.\d+)?\s*dBm$/i.test(print.wifi_signal.trim())
+    ? print.wifi_signal.trim().replace(/\s*dBm$/i, ' dBm') : 'Not reported';
+  const nozzles = print.device?.nozzle?.info;
+  const extruderState = reportedNumber(print.device?.extruder?.state);
+  const activeNozzle = extruderState !== null && Number.isInteger(extruderState) && extruderState >= 0
+    ? (extruderState >> 4) & 15 : null;
+  const nozzle = Array.isArray(nozzles)
+    ? (activeNozzle === null ? null : nozzles.find(item => reportedNumber(item?.id) === activeNozzle)) || (nozzles.length === 1 ? nozzles[0] : null)
+    : null;
+  const diameter = reportedNumber(nozzle?.diameter ?? print.nozzle_diameter);
+  const airductParts = print.device?.airduct?.parts;
+  const secondaryFan = Array.isArray(airductParts) ? airductParts.find(item => reportedNumber(item?.id) === 160) : null;
+  const secondarySpeed = reportedNumber(secondaryFan?.state);
+  const light = Array.isArray(print.lights_report) ? print.lights_report.find(item => item?.node === 'chamber_light') : null;
+  const modes = { on: 'On', off: 'Off', flashing: 'Flashing' };
+  const camera = print.ipcam || {};
+  const enabled = { enable: 'Enabled', disable: 'Disabled' };
+  const storage = print.device?.storage;
+  const usbConnected = Array.isArray(storage) ? storage.some(item => item?.name === 'usb') : null;
+  const total = reportedNumber(print.device?.cam?.tl_external_total_kb);
+  const free = reportedNumber(print.device?.cam?.tl_external_free_kb);
+  let usb = usbConnected === null ? null : usbConnected ? 'Connected' : 'Not connected';
+  if (usbConnected !== false && total !== null && total > 0) {
+    const capacity = free !== null && free >= 0 && free <= total
+      ? `${(free / 1048576).toFixed(1)} GiB free of ${(total / 1048576).toFixed(1)} GiB`
+      : `${(total / 1048576).toFixed(1)} GiB total`;
+    usb = usb ? `${usb} · ${capacity}` : capacity;
+  }
+  const alerts = printerAlerts(print);
+  const entries = [
+    ['Alerts', alerts.length ? alerts.join('\n') : Array.isArray(print.hms) || errorHex(print.print_error) ? 'No alerts in reported data' : 'Not reported'],
+    ...(isPreview ? [['Data', 'Demo data']] : connection === 'disconnected' ? [['Data', 'Not connected']] : offline || connection !== 'connected' || serverUnavailable ? [['Data', 'Last reported data']] : []),
+    ['Print stage', stage === null ? 'Not reported' : printStages[stage] || `Unknown (${stage})`],
+    ['Speed mode', speed === null ? 'Not reported' : `${profiles[speed] || `Unknown (${speed})`}${modifier !== null && modifier >= 0 ? ` · ${modifier}%` : ''}`],
+    ['Part cooling fan', fanSpeed(print.cooling_fan_speed)],
+    ['Auxiliary fan', fanSpeed(print.big_fan1_speed)],
+    ['Chamber fan', fanSpeed(print.big_fan2_speed)],
+    ...(secondaryFan ? [['Secondary auxiliary fan',
+      secondarySpeed !== null && secondarySpeed >= 0 && secondarySpeed <= 100 ? `${secondarySpeed}%` : 'Not reported']] : []),
+    ['Wi-Fi signal', wifi],
+    ...(usb === null ? [] : [['USB storage', usb]]),
+    ['Nozzle diameter', diameter !== null && diameter > 0 ? `${diameter} mm` : 'Not reported'],
+    ['Chamber light', modes[light?.mode] || 'Not reported'],
+    ['Camera recording', enabled[camera.ipcam_record] || 'Not reported'],
+    ['Timelapse', enabled[camera.timelapse] || 'Not reported']
+  ];
+  const container = byId('status-details');
+  container.replaceChildren(...entries.map(([label, value], index) => {
+    const item = document.createElement('div');
+    if (index === 0) item.className = 'status-alerts';
+    const term = document.createElement('dt');
+    const detail = document.createElement('dd');
+    term.textContent = label;
+    detail.textContent = value;
+    item.append(term, detail);
+    return item;
+  }));
+  const banner = byId('printer-alert');
+  banner.hidden = alerts.length === 0;
+  banner.textContent = `${alerts.length} printer ${alerts.length === 1 ? 'alert' : 'alerts'} · View status`;
 }
 function currentFilament(print) {
   const extruder = print.device?.extruder;
@@ -152,7 +287,9 @@ function renderAms(report, isPreview, connection) {
       slotElement.className = `ams-slot${isActive ? ' is-active' : ''}${spinning ? ' is-spinning' : ''}${present ? '' : ' is-empty'}`;
       slotElement.innerHTML = '<div class="slot-top"><span class="slot-number"></span><span class="slot-active"></span></div><div class="spool" aria-hidden="true"><div class="spool-winding"><span></span></div></div><div class="slot-name"></div><div class="slot-detail"></div>';
       slotElement.style.setProperty('--filament', filamentColor(tray?.tray_color));
-      slotElement.querySelector('.slot-number').textContent = String(slot + 1).padStart(2, '0');
+      slotElement.querySelector('.slot-number').textContent = Number.isInteger(unitId) && unitId >= 0 && unitId < 26
+        ? `${String.fromCharCode(65 + unitId)}${slot + 1}`
+        : String(slot + 1).padStart(2, '0');
       slotElement.querySelector('.slot-active').textContent = isActive ? (spinning ? 'IN USE' : 'LOADED') : '';
       slotElement.querySelector('.slot-name').textContent = present ? (tray?.tray_sub_brands || tray?.tray_type || 'Unknown filament') : 'Empty';
       const remain = Number(tray?.remain);
@@ -213,6 +350,7 @@ function render(device, report, isPreview, connection) {
   setText('updated', isPreview ? 'EXAMPLE DATA · NOT CONNECTED' : report._updated_at ? `LAST UPDATE · ${new Date(report._updated_at * 1000).toLocaleTimeString([], {hour: 'numeric', minute: '2-digit', second: '2-digit'})}` : 'WAITING FOR PRINTER DATA');
   setText('refresh-detail', isPreview ? 'Demo data · checked every 5 sec' : report._updated_at ? `Report ${new Date(report._updated_at * 1000).toLocaleTimeString([], {hour: 'numeric', minute: '2-digit', second: '2-digit'})} · checked every 5 sec` : 'Waiting for report · checked every 5 sec');
   renderAms(report, isPreview, connection);
+  renderTelemetry(report, connection, isPreview, offline);
 }
 
 async function request(path, data) {
@@ -253,6 +391,7 @@ function showSnapshot() {
     setText('printer-serial', '—');
     setText('updated', hasSession ? 'WAITING FOR PRINTER DATA' : 'NOT CONNECTED');
     renderAms({}, false, connection);
+    renderTelemetry({}, connection, false, false);
     const title = serverUnavailable ? 'Local server unavailable' : connection === 'connected' ? 'No printers found' : connection === 'connecting' ? 'Connecting to Bambu Cloud' : connection === 'error' ? 'Cloud connection failed' : 'Connect your printer';
     const message = serverUnavailable ? 'Check that the local dashboard server is running, then retry.' : connection === 'connected' ? 'No printers were found in this account. Add a printer to your account or disconnect to use another account.' : connection === 'connecting' ? 'Waiting for the cloud connection. You can disconnect and try another account.' : connection === 'error' ? 'Disconnect and try connecting again.' : 'Connect to Bambu Cloud to see your printer and live status.';
     setText('connect-prompt-title', title);

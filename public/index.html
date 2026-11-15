@@ -9,9 +9,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css?v=2">
-  <link rel="stylesheet" href="/theme.css?v=4">
+  <link rel="stylesheet" href="/theme.css?v=5">
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
-  <script src="/app.js?v=11" defer></script>
+  <script src="/app.js?v=15" defer></script>
 </head>
 <body class="desktop">
   <div class="app-shell">
@@ -42,6 +42,7 @@
 
         <div id="connect-prompt" class="connect-prompt" role="status"><i data-lucide="printer"></i><h2 id="connect-prompt-title">Checking connection</h2><p id="connect-prompt-message">Connecting to the local dashboard.</p><button id="connect-prompt-button" class="button button-dark" type="button" hidden>Connect printer</button></div>
         <div id="printer-data" hidden>
+        <a id="printer-alert" class="printer-alert" href="#printer-details" role="status" hidden></a>
         <div class="section-heading"><div><span class="section-index">01 /</span><h2>Printer overview</h2></div><div class="section-right"><select id="printer-select" aria-label="Select printer" hidden></select><span class="live-indicator"><span></span><span id="mode-label">NOT CONNECTED</span></span><button class="icon-button" id="refresh-button" title="Refresh status" aria-label="Refresh status"><i data-lucide="refresh-cw"></i></button></div></div>
         <p class="refresh-detail" id="refresh-detail">Preview data · checked every 5 sec</p>
 
@@ -72,6 +73,10 @@
         <section class="ams-section" aria-labelledby="ams-heading">
           <div class="section-heading ams-heading"><div><span class="section-index">03 /</span><h2 id="ams-heading">Filament system</h2></div><span class="ams-summary" id="ams-summary">PREVIEW DATA</span></div>
           <div id="ams-units" class="ams-units"></div>
+        </section>
+        <section id="printer-details" class="printer-details" aria-labelledby="details-heading">
+          <div class="section-heading"><div><h2 id="details-heading">Printer status</h2></div></div>
+          <dl id="status-details" class="status-details"></dl>
         </section>
         <footer class="page-footer"><span>MADE FOR THE MAKING.</span><span id="updated">EXAMPLE DATA · NOT CONNECTED</span><span>YOUR SPACE, YOUR PACE <span class="footer-star">✳</span></span></footer>
         </div>

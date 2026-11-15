@@ -78,6 +78,30 @@ class TelemetryMergeTests(unittest.TestCase):
         merge_dict(report, {"print": {"hms": []}})
         self.assertEqual(report["print"]["hms"], [])
 
+    def test_partial_status_updates_preserve_other_components(self):
+        report = {"print": {
+            "device": {
+                "nozzle": {"info": [{"id": 0, "diameter": "0.4"}, {"id": 1, "diameter": "0.6"}]},
+                "airduct": {"parts": [{"id": 160, "state": 40}, {"id": 161, "state": 20}]},
+                "storage": [{"name": "usb"}],
+            },
+            "lights_report": [{"node": "chamber_light", "mode": "on"}, {"node": "work_light", "mode": "off"}],
+        }}
+        update = {"print": {
+            "device": {
+                "nozzle": {"info": [{"id": 1, "type": "steel"}]},
+                "airduct": {"parts": [{"id": 160, "state": 60}]},
+                "storage": [],
+            },
+            "lights_report": [{"node": "work_light", "mode": "on"}],
+        }}
+        merge_dict(report, update)
+        device = report["print"]["device"]
+        self.assertEqual(device["nozzle"]["info"], [{"id": 0, "diameter": "0.4"}, {"id": 1, "diameter": "0.6", "type": "steel"}])
+        self.assertEqual(device["airduct"]["parts"], [{"id": 160, "state": 60}, {"id": 161, "state": 20}])
+        self.assertEqual(device["storage"], [])
+        self.assertEqual(report["print"]["lights_report"], [{"node": "chamber_light", "mode": "on"}, {"node": "work_light", "mode": "on"}])
+
 
 class SavedSessionTests(unittest.TestCase):
     def test_save_restore_and_forget(self):
