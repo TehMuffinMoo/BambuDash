@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- Printer alerts now show only items the printer itself displays (error, warning, notification) and are coloured by severity.
+- Alerts show descriptions from the Bambu HMS wiki for each configured printer model, with a setting to show the raw codes.
+- Added a local description for the E1 purifier high PM2.5 alert.
+
 ## 0.2.0
 
 - Added printer status details, alerts, and reported USB storage capacity to both views.

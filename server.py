@@ -23,6 +23,20 @@ CONFIG_HOME = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
 SESSION_FILE = CONFIG_HOME / "bambudash" / "session.json"
 LEGACY_SESSION_FILE = CONFIG_HOME / "layer-touch" / "session.json"
 SESSION_FILE_LOCK = threading.RLock()
+HMS_URL = "https://e.bambulab.com/wikijs/GetHmsWikiList.php?size=1000&lang=en&id={id}&page={page}"
+# Printer serial prefix (first 3 characters) to the HMS wiki device id.
+HMS_DEVICE_IDS = {
+    "00M": 1, "00W": 2, "01S": 3, "01P": 4, "030": 5, "039": 6, "03W": 7, "093": 8,
+    "094": 9, "31B": 10, "20P": 11, "22E": 12, "239": 13, "26A": 14, "32X": 15, "35F": 17,
+}
+HMS_CACHE = {}
+HMS_LOCK = threading.Lock()
+# Codes missing from the Bambu wiki list (E1 purifier); the wiki list overrides these.
+LOCAL_HMS_DESCRIPTIONS = {
+    "2900000000030002": "High PM2.5 concentration detected. Please check if the filter is installed or has failed.",
+}
+HMS_DESCRIPTIONS = dict(LOCAL_HMS_DESCRIPTIONS)
+HMS_NEEDED = set()
 HEADERS = {
     "User-Agent": "BambuStudio/1.10.0",
     "Content-Type": "application/json",
@@ -55,6 +69,61 @@ def cloud_request(path, data=None, token=None, region="global", allow_empty=Fals
         raise ValueError(f"Bambu Cloud returned HTTP {error.code}. Check your credentials or try again later.") from error
     except (urllib.error.URLError, TimeoutError) as error:
         raise ValueError("Could not reach Bambu Cloud. Check your internet connection.") from error
+
+
+def fetch_hms_descriptions(device_id):
+    descriptions = {}
+    for page in range(1, 11):
+        request = urllib.request.Request(HMS_URL.format(id=device_id, page=page), headers=HEADERS)
+        with urllib.request.urlopen(request, timeout=15) as response:
+            data = json.loads(response.read())["data"]
+        records = data["records"]
+        for record in records:
+            code = str(record.get("ecode", "")).upper()
+            intro = record.get("intro")
+            if len(code) == 16 and isinstance(intro, str) and intro.strip():
+                descriptions[code] = " ".join(intro.split())
+        if not records or len(descriptions) >= data.get("total", 0):
+            break
+    return descriptions
+
+
+def load_hms_descriptions(serials):
+    """Keep descriptions only for the models of the given printer serials."""
+    global HMS_DESCRIPTIONS, HMS_NEEDED
+    needed = set()
+    for serial in serials:
+        device_id = HMS_DEVICE_IDS.get(str(serial)[:3].upper())
+        if device_id is None:
+            print(f"No HMS code list known for printer {serial}; alerts will show codes only.", flush=True)
+        else:
+            needed.add(device_id)
+    with HMS_LOCK:
+        for device_id in set(HMS_CACHE) - needed:
+            del HMS_CACHE[device_id]
+        HMS_NEEDED = needed
+        missing = needed - set(HMS_CACHE)
+    for device_id in sorted(missing):
+        try:
+            descriptions = fetch_hms_descriptions(device_id)
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            print(f"Could not load HMS descriptions for device {device_id}; alerts will show codes only.", flush=True)
+            continue
+        for code in sorted(LOCAL_HMS_DESCRIPTIONS.keys() & descriptions.keys()):
+            print(f"HMS code {code} is now listed by Bambu; remove it from LOCAL_HMS_DESCRIPTIONS in server.py.", flush=True)
+        with HMS_LOCK:
+            if device_id in HMS_NEEDED:
+                HMS_CACHE[device_id] = descriptions
+    with HMS_LOCK:
+        merged = dict(LOCAL_HMS_DESCRIPTIONS)
+        for descriptions in HMS_CACHE.values():
+            merged.update(descriptions)
+        HMS_DESCRIPTIONS = merged
+
+
+def hms_snapshot():
+    with HMS_LOCK:
+        return {"loaded": bool(HMS_NEEDED) and HMS_NEEDED <= set(HMS_CACHE), "descriptions": HMS_DESCRIPTIONS}
 
 
 def merge_dict(target, update, path=()):
@@ -165,6 +234,7 @@ class CloudSession:
             self.preview_images = {}
             self.access_codes = {device["dev_id"]: device.get("dev_access_code", "")
                                  for device in devices if device.get("dev_id")}
+        threading.Thread(target=load_hms_descriptions, args=([device["id"] for device in self.devices],), daemon=True).start()
         host = "cn.mqtt.bambulab.com" if region == "china" else "us.mqtt.bambulab.com"
         try:
             client.connect_async(host, 8883, 60)
@@ -217,6 +287,7 @@ class CloudSession:
         if client:
             client.disconnect()
             client.loop_stop()
+        load_hms_descriptions([])
 
     def schedule_preview(self, client, serial):
         report = self.reports[serial]
@@ -370,6 +441,8 @@ class Handler(SimpleHTTPRequestHandler):
             self.wfile.write(image)
         elif path == "/api/status":
             self.json_response(session.snapshot())
+        elif path == "/api/hms":
+            self.json_response(hms_snapshot())
         elif path == "/api/update/status":
             try:
                 self.json_response(updates.status())

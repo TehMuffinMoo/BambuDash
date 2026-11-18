@@ -6,7 +6,12 @@ let selectedPrinter = null;
 let lastAmsSignature = '';
 let demoMode = false;
 let serverUnavailable = false;
+let hmsDescriptions = {};
+let hmsLoaded = false;
+let hmsPrinters = '';
 const themeKey = 'bambudash-theme';
+const alertCodesKey = 'bambudash-alert-codes';
+let showAlertCodes = false;
 
 const preview = {
   devices: [
@@ -86,20 +91,25 @@ function errorHex(value) {
   return number !== null && Number.isInteger(number) && number >= 0 && number <= 0xffffffff
     ? number.toString(16).toUpperCase().padStart(8, '0') : null;
 }
+const alertLevels = { 1: 'Error', 2: 'Warning', 3: 'Notice' };
 function printerAlerts(print) {
   const alerts = [];
   const code = errorHex(print.print_error);
-  if (code && code !== '00000000') alerts.push(`Print error ${code.slice(0, 4)}_${code.slice(4)}`);
+  if (code && code !== '00000000') alerts.push({ level: 1, text: `Print error ${code.slice(0, 4)}_${code.slice(4)}` });
   if (Array.isArray(print.hms)) {
     for (const entry of print.hms) {
       const attr = errorHex(entry?.attr);
       const detail = errorHex(entry?.code);
-      const description = typeof entry?.message === 'string' ? entry.message.trim() : '';
+      // The upper 16 bits of the code are the alert level; the printer only shows 1 (error), 2 (warning) and 3 (notification).
+      const level = detail ? parseInt(detail.slice(0, 4), 16) : null;
+      if (level === null || level < 1 || level > 3) continue;
+      const description = hmsDescriptions[`${attr}${detail}`] || (typeof entry?.message === 'string' ? entry.message.trim() : '');
       const name = attr && detail ? `HMS_${attr.slice(0, 4)}_${attr.slice(4)}_${detail.slice(0, 4)}_${detail.slice(4)}` : 'Unrecognized printer alert';
-      alerts.push(description ? `${name}: ${description}` : name);
+      if (!description && !showAlertCodes) continue;
+      alerts.push({ level, text: description ? (showAlertCodes ? `${name}: ${description}` : description) : name });
     }
   }
-  return alerts;
+  return alerts.sort((first, second) => first.level - second.level);
 }
 function renderTelemetry(report, connection, isPreview, offline) {
   const print = report.print || {};
@@ -137,7 +147,7 @@ function renderTelemetry(report, connection, isPreview, offline) {
   }
   const alerts = printerAlerts(print);
   const entries = [
-    ['Alerts', alerts.length ? alerts.join('\n') : Array.isArray(print.hms) || errorHex(print.print_error) ? 'No alerts in reported data' : 'Not reported'],
+    ['Alerts', alerts.length ? alerts : Array.isArray(print.hms) || errorHex(print.print_error) ? 'No alerts in reported data' : 'Not reported'],
     ...(isPreview ? [['Data', 'Demo data']] : connection === 'disconnected' ? [['Data', 'Not connected']] : offline || connection !== 'connected' || serverUnavailable ? [['Data', 'Last reported data']] : []),
     ['Print stage', stage === null ? 'Not reported' : printStages[stage] || `Unknown (${stage})`],
     ['Speed mode', speed === null ? 'Not reported' : `${profiles[speed] || `Unknown (${speed})`}${modifier !== null && modifier >= 0 ? ` · ${modifier}%` : ''}`],
@@ -160,12 +170,22 @@ function renderTelemetry(report, connection, isPreview, offline) {
     const term = document.createElement('dt');
     const detail = document.createElement('dd');
     term.textContent = label;
-    detail.textContent = value;
+    if (Array.isArray(value)) {
+      detail.append(...value.map(alert => {
+        const line = document.createElement('span');
+        line.className = `alert-line alert-level-${alert.level}`;
+        line.textContent = `${alertLevels[alert.level]}: ${alert.text}`;
+        return line;
+      }));
+    } else {
+      detail.textContent = value;
+    }
     item.append(term, detail);
     return item;
   }));
   const banner = byId('printer-alert');
   banner.hidden = alerts.length === 0;
+  banner.className = `printer-alert${alerts.length ? ` alert-level-${alerts[0].level}` : ''}`;
   banner.textContent = `${alerts.length} printer ${alerts.length === 1 ? 'alert' : 'alerts'} · View status`;
 }
 function currentFilament(print) {
@@ -422,6 +442,21 @@ async function refresh() {
     if (!response.ok) throw new Error('Status unavailable');
     lastSnapshot = await response.json();
     serverUnavailable = false;
+    if (lastSnapshot.devices?.length) {
+      const printers = lastSnapshot.devices.map(device => device.id).join();
+      if (printers !== hmsPrinters) {
+        hmsPrinters = printers;
+        hmsLoaded = false;
+      }
+      if (!hmsLoaded) {
+        const hms = await fetch('/api/hms', { cache: 'no-store' });
+        if (hms.ok) {
+          const result = await hms.json();
+          hmsDescriptions = result.descriptions;
+          hmsLoaded = result.loaded;
+        }
+      }
+    }
   } catch (error) {
     console.warn('Could not refresh printer status:', error);
     serverUnavailable = true;
@@ -481,6 +516,21 @@ byId('theme-select').addEventListener('change', event => {
 });
 window.addEventListener('storage', event => {
   if (event.key === themeKey) applyTheme(event.newValue);
+});
+try {
+  showAlertCodes = localStorage.getItem(alertCodesKey) === 'shown';
+} catch (error) {
+  console.warn('Could not load the alert code preference:', error);
+}
+byId('alert-codes').value = showAlertCodes ? 'shown' : 'hidden';
+byId('alert-codes').addEventListener('change', event => {
+  showAlertCodes = event.target.value === 'shown';
+  try {
+    localStorage.setItem(alertCodesKey, event.target.value);
+  } catch (error) {
+    console.warn('Could not save the alert code preference:', error);
+  }
+  showSnapshot();
 });
 let updateVersion = null;
 let updateInProgress = false;
