@@ -9,6 +9,7 @@ let serverUnavailable = false;
 let hmsDescriptions = {};
 let hmsLoaded = false;
 let hmsPrinters = '';
+let pageVersion = null;
 const themeKey = 'bambudash-theme';
 const alertCodesKey = 'bambudash-alert-codes';
 let showAlertCodes = false;
@@ -453,6 +454,14 @@ async function refresh() {
     if (!response.ok) throw new Error('Status unavailable');
     lastSnapshot = await response.json();
     serverUnavailable = false;
+    // A changed server version means an update was installed, so load the new page files.
+    if (lastSnapshot.version) {
+      if (!pageVersion) pageVersion = lastSnapshot.version;
+      else if (lastSnapshot.version !== pageVersion) {
+        location.reload();
+        return;
+      }
+    }
     if (lastSnapshot.devices?.length) {
       const printers = lastSnapshot.devices.map(device => device.id).join();
       if (printers !== hmsPrinters) {

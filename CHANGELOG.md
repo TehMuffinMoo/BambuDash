@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3
+
+- The dashboard page now reloads itself after an update, so a kiosk without a keyboard shows the new version.
+
 ## 0.3.2
 
 - On the touchscreen, printer alerts now appear as a count badge on the Status button instead of a banner. The badge is coloured by severity and pulses for errors.

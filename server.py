@@ -440,7 +440,11 @@ class Handler(SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(image)
         elif path == "/api/status":
-            self.json_response(session.snapshot())
+            try:
+                version = updates.current_version()
+            except updater.UpdateError:
+                version = None
+            self.json_response({**session.snapshot(), "version": version})
         elif path == "/api/hms":
             self.json_response(hms_snapshot())
         elif path == "/api/update/status":
