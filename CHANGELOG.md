@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0
+## 0.3.2
 
 - On the touchscreen, printer alerts now appear as a count badge on the Status button instead of a banner. The badge is coloured by severity and pulses for errors.
 
