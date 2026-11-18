@@ -30,7 +30,6 @@ function showAms() {
   document.getElementById('ams-next').disabled = amsIndex >= units.length - 1;
 }
 document.querySelectorAll('.nav-button').forEach(button => button.addEventListener('click', () => showPage(button.dataset.page)));
-document.getElementById('printer-alert').addEventListener('click', () => showPage('status'));
 document.getElementById('ams-prev').addEventListener('click', () => { amsIndex--; showAms(); });
 document.getElementById('ams-next').addEventListener('click', () => { amsIndex++; showAms(); });
 new MutationObserver(showAms).observe(document.getElementById('ams-units'), { childList: true });

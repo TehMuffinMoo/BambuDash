@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0
+
+- On the touchscreen, printer alerts now appear as a count badge on the Status button instead of a banner. The badge is coloured by severity and pulses for errors.
+
 ## 0.3.1
 
 - The updater now flushes files to disk before restarting, reducing the risk of empty files after a power loss.

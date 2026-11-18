@@ -184,9 +184,20 @@ function renderTelemetry(report, connection, isPreview, offline) {
     return item;
   }));
   const banner = byId('printer-alert');
-  banner.hidden = alerts.length === 0;
-  banner.className = `printer-alert${alerts.length ? ` alert-level-${alerts[0].level}` : ''}`;
-  banner.textContent = `${alerts.length} printer ${alerts.length === 1 ? 'alert' : 'alerts'} · View status`;
+  if (banner) {
+    banner.hidden = alerts.length === 0;
+    banner.className = `printer-alert${alerts.length ? ` alert-level-${alerts[0].level}` : ''}`;
+    banner.textContent = `${alerts.length} printer ${alerts.length === 1 ? 'alert' : 'alerts'} · View status`;
+  }
+  const badge = byId('status-alert');
+  if (badge) {
+    badge.hidden = alerts.length === 0;
+    badge.textContent = alerts.length || '';
+    badge.className = `nav-alert${alerts.length ? ` alert-level-${alerts[0].level}` : ''}`;
+    const button = badge.closest('button');
+    if (alerts.length) button.setAttribute('aria-label', `Status, ${alerts.length} ${alerts.length === 1 ? 'alert' : 'alerts'}`);
+    else button.removeAttribute('aria-label');
+  }
 }
 function currentFilament(print) {
   const extruder = print.device?.extruder;
