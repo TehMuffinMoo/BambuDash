@@ -25,6 +25,14 @@ The touchscreen interface at 800 × 480, showing a P2S with an AMS 2 Pro.
 
 ![Printer status](docs/screenshots/touch-status.png)
 
+### Connecting a printer
+
+Tap **Connect printer**, then sign in with an emailed verification code, or choose "Use an access token instead".
+
+| Connect prompt | Email verification | Access token |
+| --- | --- | --- |
+| ![Connect prompt](docs/screenshots/touch-connect-prompt.png) | ![Email verification](docs/screenshots/touch-connect-email.png) | ![Access token](docs/screenshots/touch-connect-token.png) |
+
 ## Installation
 
 ### Standard installation
