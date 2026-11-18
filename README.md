@@ -14,6 +14,17 @@ BambuDash is a local, read-only dashboard for Bambu Lab printers. It uses Bambu 
 
 Available readings depend on the printer and its firmware. The dashboard checks for updates every five seconds. Local P2S print thumbnails require network access to the printer and its media; cloud print thumbnails come from Bambu Cloud.
 
+## Screenshots
+
+The touchscreen interface at 800 × 480, showing a P2S with an AMS 2 Pro.
+
+| Overview | Filament |
+| --- | --- |
+| ![Overview](docs/screenshots/touch-overview.png) | ![Filament](docs/screenshots/touch-filament.png) |
+| ![Overview, dark theme](docs/screenshots/touch-overview-dark.png) | ![Filament, dark theme](docs/screenshots/touch-filament-dark.png) |
+
+![Printer status](docs/screenshots/touch-status.png)
+
 ## Installation
 
 ### Standard installation
