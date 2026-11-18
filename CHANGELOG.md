@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- The updater now flushes files to disk before restarting, reducing the risk of empty files after a power loss.
+
 ## 0.3.0
 
 - Printer alerts now show only items the printer itself displays (error, warning, notification) and are coloured by severity.

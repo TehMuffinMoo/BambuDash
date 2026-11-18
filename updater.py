@@ -354,6 +354,9 @@ class UpdateManager:
                 check_copied_install(self.root, old_files, new_files)
                 dependencies_changed = install_dependencies(self.root, new_files["requirements.txt"][0])
                 update_copied_install(self.root, old_files, new_files)
+            # Flush new files to disk so a power cut right after the restart can't leave empty files.
+            if hasattr(os, "sync"):
+                os.sync()
             try:
                 lock_path.unlink()
                 lock_acquired = False
